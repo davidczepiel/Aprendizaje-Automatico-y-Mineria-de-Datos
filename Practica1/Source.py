@@ -51,6 +51,10 @@ def main():
     #Mostramos la grafica 3d del coste de la funcion
     plt.show()  
 
+    #Mostramos la grafica de ovalos
+    plt.contour(Theta0, Theta1, Coste,np.logspace(-2, 3, 20), colors='blue')
+
+
 
 def coste(X,Y,Theta0,Theta1):
     costeTotal=0
@@ -69,7 +73,8 @@ def make_data ( t0_range , t1_range , X , Y ) :
     Coste = np.empty_like( Theta0 )
     for ix , iy in np.ndindex ( Theta0.shape ) :
         Coste [ ix , iy ] = coste(X, Y , Theta0 [ ix , iy ] , Theta1 [ ix , iy ])
-    return [ Theta0 , Theta1 , Coste ]
+
+    return [ Theta0 , Theta1 , Coste]
 
 
 def drawFunction(X, Y, theta0, theta1):
