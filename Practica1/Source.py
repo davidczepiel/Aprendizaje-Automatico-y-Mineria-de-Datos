@@ -104,6 +104,26 @@ def RegresionVariasVariables():
     X = np.hstack([np.ones([m, 1] ) , X ] )
 
     Xnomr, mu, sigma = normalizarDatos(X)
+
+    thetas = np.zeros(n+1)
+
+    #aplicamos el descanso de gradiente con NUM_ITERATIONS iteraciones
+    for iteration in range(NUM_ITERATIONS):
+        sums = np.zeros(n+1)
+        costeActual = 0
+        for i in range(m):
+            for j in range(n+1):
+                h = 0
+                for k in range(n+1):
+                    h += thetas[k] * X[i,k]
+                sums[j] += (h - Y[i]) * X[i,j]
+                costeActual += (h - Y[i])**2
+        
+        #actualizamos los valores de theta1 y 2 correspondientemente
+        thetas = thetas - ((ALPHA/m) * sums)
+        costeActual = costeActual/(2*m)
+        print(costeActual)
+    
     
 def costeVariasVariables(X, Y, Theta):
     H = np.dot(X, Theta)
@@ -116,13 +136,8 @@ def normalizarDatos(X):
     media =np.mean(X,axis = 0)
     #desviaciones tipicas
     desvTipica = np.std(X,axis=0)
-
-    #Sacamos los valores de cada columna
-    # for j in range(len(media)):
-    #     print(size(XNorm[:,j]))
-    #     X[:,j] = (X[:,j] - media[j])/desvTipica[j]
     
-    X = (X - media) / desvTipica
+    X[:,1:] = (X[:,1:] - media[1:]) / desvTipica[1:]
     return X, media, desvTipica
 
 main()
