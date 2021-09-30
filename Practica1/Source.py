@@ -3,12 +3,20 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
+from numpy.core.fromnumeric import size
 from pandas.io.parsers import read_csv
 
 ALPHA = 0.01
 NUM_ITERATIONS = 15000
 
 def main():
+    #Regresion1Variable()
+    RegresionVariasVariables()
+
+
+
+
+def Regresion1Variable():
     #valores con los que trabajar guardados en un .csv
     valores = read_csv( "ex1data1.csv" , header=None).to_numpy()
     #sepramos los valores de x e y en dos arrays
@@ -47,14 +55,14 @@ def main():
     ax.zaxis.set_major_formatter('{x:.02f}')
 
     # Add a color bar which maps values to colors.
+
     fig.colorbar(surf, shrink=0.5, aspect=5)
     #Mostramos la grafica 3d del coste de la funcion
     plt.show()  
 
     #Mostramos la grafica de ovalos
     plt.contour(Theta0, Theta1, Coste,np.logspace(-2, 3, 20), colors='blue')
-
-
+    plt.show()  
 
 def coste(X,Y,Theta0,Theta1):
     costeTotal=0
@@ -87,6 +95,35 @@ def drawFunction(X, Y, theta0, theta1):
     plt.plot([minX, maxX], [minY, maxY])
     plt.savefig("rectaEstimacion.pdf")
 
+def RegresionVariasVariables():
+    valores = read_csv ( "ex1data2.csv", header=None ).to_numpy( ).astype(float)
+    X = valores[ : , : -1]
+    Y = valores[ : , -1]
+    m = np.shape(X)[0]
+    n = np.shape(X)[1]
+    X = np.hstack([np.ones([m, 1] ) , X ] )
+
+    Xnomr, mu, sigma = normalizarDatos(X)
+    
+def costeVariasVariables(X, Y, Theta):
+    H = np.dot(X, Theta)
+    Aux = (H - Y) ** 2
+    return Aux.sum() / (2 * len(X))
+
+
+def normalizarDatos(X):
+    #Medias
+    media =np.mean(X,axis = 0)
+    #desviaciones tipicas
+    desvTipica = np.std(X,axis=0)
+
+    #Sacamos los valores de cada columna
+    # for j in range(len(media)):
+    #     print(size(XNorm[:,j]))
+    #     X[:,j] = (X[:,j] - media[j])/desvTipica[j]
+    
+    X = (X - media) / desvTipica
+    return X, media, desvTipica
 
 main()
 
