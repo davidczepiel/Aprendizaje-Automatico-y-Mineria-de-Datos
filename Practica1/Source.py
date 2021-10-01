@@ -12,8 +12,7 @@ NUM_ITERATIONS = 15000
 def main():
     #Regresion1Variable()
     RegresionVariasVariables()
-
-
+    ecuacionNormal()
 
 
 def Regresion1Variable():
@@ -94,6 +93,7 @@ def drawFunction(X, Y, theta0, theta1):
     maxY = theta0 + (theta1 * maxX)
     plt.plot([minX, maxX], [minY, maxY])
     plt.savefig("rectaEstimacion.pdf")
+    
 
 def RegresionVariasVariables():
     valores = read_csv ( "ex1data2.csv", header=None ).to_numpy( ).astype(float)
@@ -105,9 +105,12 @@ def RegresionVariasVariables():
 
     Xnomr, mu, sigma = normalizarDatos(X)
 
+    #gradienteBuclesVarias(n, m, X, Y)
+    gradienteVectoresVarias(n, m, X, Y)
+    
+    
+def gradienteBuclesVarias(n, m, X, Y):
     thetas = np.zeros(n+1)
-
-    #aplicamos el descanso de gradiente con NUM_ITERATIONS iteraciones
     for iteration in range(NUM_ITERATIONS):
         sums = np.zeros(n+1)
         costeActual = 0
@@ -122,8 +125,30 @@ def RegresionVariasVariables():
         #actualizamos los valores de theta1 y 2 correspondientemente
         thetas = thetas - ((ALPHA/m) * sums)
         costeActual = costeActual/(2*m)
-        print(costeActual)
+        #print(costeActual)
+    print(thetas)
+        
     
+def gradienteVectoresVarias(n, m, X, Y):
+    thetas = np.zeros(n+1)
+    
+    media =np.mean(Y)
+    desvTipica = np.std(Y)
+    Y = (Y - media) / desvTipica
+    
+    for iteration in range(NUM_ITERATIONS):
+        NuevaTheta = thetas
+        H = np.dot(X, thetas)
+        Aux = (H - Y)
+        for i in range(n+1):
+            Aux_i = Aux * X[:, i]
+            NuevaTheta -= (ALPHA / m) * Aux_i.sum()
+        thetas = NuevaTheta
+        costeActual = costeVariasVariables(X,Y,thetas)
+        #print(costeActual)
+    print(thetas)
+
+                
     
 def costeVariasVariables(X, Y, Theta):
     H = np.dot(X, Theta)
@@ -139,6 +164,22 @@ def normalizarDatos(X):
     
     X[:,1:] = (X[:,1:] - media[1:]) / desvTipica[1:]
     return X, media, desvTipica
+
+
+def ecuacionNormal():
+    valores = read_csv ( "ex1data2.csv", header=None ).to_numpy( ).astype(float)
+    X = valores[ : , : -1]
+    Y = valores[ : , -1]
+    m = np.shape(X)[0]
+    n = np.shape(X)[1]
+    X = np.hstack([np.ones([m, 1] ) , X ] )
+
+    Xt = np.transpose(X)
+    primerElem =np.linalg.pinv(np.matmul(Xt,X))
+    segundoElem = np.matmul(Xt,Y)
+    thetas = np.matmul(primerElem,segundoElem)
+    print(thetas)
+    
 
 main()
 
