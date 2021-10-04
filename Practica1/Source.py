@@ -14,6 +14,7 @@ def main():
     RegresionVariasVariables()
     ecuacionNormal()
 
+##################################### 1 VARIABLE ##########################################3
 
 def Regresion1Variable():
     #valores con los que trabajar guardados en un .csv
@@ -63,14 +64,6 @@ def Regresion1Variable():
     plt.contour(Theta0, Theta1, Coste,np.logspace(-2, 3, 20), colors='blue')
     plt.show()  
 
-def coste(X,Y,Theta0,Theta1):
-    costeTotal=0
-    for i in range(len(X)):
-        valor = Theta0 + (Theta1*X[i])
-        costeTotal += ((valor-Y[i])**2)
-    
-    return costeTotal/(2*len(X))
-
 
 def make_data ( t0_range , t1_range , X , Y ) :
     step = 0.1
@@ -83,6 +76,13 @@ def make_data ( t0_range , t1_range , X , Y ) :
 
     return [ Theta0 , Theta1 , Coste]
 
+def coste(X,Y,Theta0,Theta1):
+    costeTotal=0
+    for i in range(len(X)):
+        valor = Theta0 + (Theta1*X[i])
+        costeTotal += ((valor-Y[i])**2)
+    
+    return costeTotal/(2*len(X))
 
 def drawFunction(X, Y, theta0, theta1):
     #Draw function
@@ -93,6 +93,10 @@ def drawFunction(X, Y, theta0, theta1):
     maxY = theta0 + (theta1 * maxX)
     plt.plot([minX, maxX], [minY, maxY])
     plt.savefig("rectaEstimacion.pdf")
+
+##################################### 1 VARIABLE ##########################################3
+
+
     
 
 def RegresionVariasVariables():
@@ -108,7 +112,19 @@ def RegresionVariasVariables():
     #gradienteBuclesVarias(n, m, X, Y)
     gradienteVectoresVarias(n, m, X, Y)
     
+
+
+def normalizarDatos(X):
+    #Medias
+    media =np.mean(X,axis = 0)
+    #desviaciones tipicas
+    desvTipica = np.std(X,axis=0)
     
+    X[:,1:] = (X[:,1:] - media[1:]) / desvTipica[1:]
+    return X, media, desvTipica
+
+
+
 def gradienteBuclesVarias(n, m, X, Y):
     thetas = np.zeros(n+1)
     for iteration in range(NUM_ITERATIONS):
@@ -144,26 +160,16 @@ def gradienteVectoresVarias(n, m, X, Y):
             Aux_i = Aux * X[:, i]
             NuevaTheta -= (ALPHA / m) * Aux_i.sum()
         thetas = NuevaTheta
-        costeActual = costeVariasVariables(X,Y,thetas)
+        costeActual = costeVectorizado(X,Y,thetas)
         #print(costeActual)
     print(thetas)
 
-                
+
     
-def costeVariasVariables(X, Y, Theta):
+def costeVectorizado(X, Y, Theta):
     H = np.dot(X, Theta)
     Aux = (H - Y) ** 2
     return Aux.sum() / (2 * len(X))
-
-
-def normalizarDatos(X):
-    #Medias
-    media =np.mean(X,axis = 0)
-    #desviaciones tipicas
-    desvTipica = np.std(X,axis=0)
-    
-    X[:,1:] = (X[:,1:] - media[1:]) / desvTipica[1:]
-    return X, media, desvTipica
 
 
 def ecuacionNormal():
