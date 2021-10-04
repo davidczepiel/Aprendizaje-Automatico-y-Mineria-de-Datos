@@ -7,7 +7,7 @@ from numpy.core.fromnumeric import size
 from pandas.io.parsers import read_csv
 
 ALPHA = 0.01
-NUM_ITERATIONS = 15000
+NUM_ITERATIONS = 1500
 
 def main():
     #Regresion1Variable()
@@ -62,6 +62,7 @@ def Regresion1Variable():
 
     #Mostramos la grafica de ovalos
     plt.contour(Theta0, Theta1, Coste,np.logspace(-2, 3, 20), colors='blue')
+    plt.plot(theta0, theta1, "x")  
     plt.show()  
 
 
@@ -81,8 +82,8 @@ def coste(X,Y,Theta0,Theta1):
     for i in range(len(X)):
         valor = Theta0 + (Theta1*X[i])
         costeTotal += ((valor-Y[i])**2)
-    
     return costeTotal/(2*len(X))
+
 
 def drawFunction(X, Y, theta0, theta1):
     #Draw function
@@ -100,6 +101,7 @@ def drawFunction(X, Y, theta0, theta1):
     
 
 def RegresionVariasVariables():
+    #Obtengo los valores con los que voy a trabajar
     valores = read_csv ( "ex1data2.csv", header=None ).to_numpy( ).astype(float)
     X = valores[ : , : -1]
     Y = valores[ : , -1]
@@ -107,11 +109,12 @@ def RegresionVariasVariables():
     n = np.shape(X)[1]
     X = np.hstack([np.ones([m, 1] ) , X ] )
 
+    #Normalizo los datos
     Xnomr, mu, sigma = normalizarDatos(X)
 
     #gradienteBuclesVarias(n, m, X, Y)
-    gradienteVectoresVarias(n, m, X, Y)
-    
+    #gradienteVectoresVarias(n, m, X, Y)
+    gradienteProfe(n,m,X,Y)
 
 
 def normalizarDatos(X):
@@ -119,57 +122,84 @@ def normalizarDatos(X):
     media =np.mean(X,axis = 0)
     #desviaciones tipicas
     desvTipica = np.std(X,axis=0)
-    
+    #Realizo la normalizacion en todo excepto en la fila de unos para no dejar un valor nan
     X[:,1:] = (X[:,1:] - media[1:]) / desvTipica[1:]
     return X, media, desvTipica
 
 
 
-def gradienteBuclesVarias(n, m, X, Y):
-    thetas = np.zeros(n+1)
-    for iteration in range(NUM_ITERATIONS):
-        sums = np.zeros(n+1)
-        costeActual = 0
-        for i in range(m):
-            for j in range(n+1):
-                h = 0
-                for k in range(n+1):
-                    h += thetas[k] * X[i,k]
-                sums[j] += (h - Y[i]) * X[i,j]
-                costeActual += (h - Y[i])**2
+# def gradienteBuclesVarias(n, m, X, Y):
+#     thetas = np.zeros(n+1)
+#     for iteration in range(NUM_ITERATIONS):
+#         sums = np.zeros(n+1)
+#         costeActual = 0
+#         for i in range(m):
+#             for j in range(n+1):
+#                 h = 0
+#                 for k in range(n+1):
+#                     h += thetas[k] * X[i,k]
+#                 sums[j] += (h - Y[i]) * X[i,j]
+#                 costeActual += (h - Y[i])**2
         
-        #actualizamos los valores de theta1 y 2 correspondientemente
-        thetas = thetas - ((ALPHA/m) * sums)
-        costeActual = costeActual/(2*m)
-        #print(costeActual)
-    print(thetas)
+#         #actualizamos los valores de theta1 y 2 correspondientemente
+#         thetas = thetas - ((ALPHA/m) * sums)
+#         costeActual = costeActual/(2*m)
+#         #print(costeActual)
+#     print(thetas)
         
     
-def gradienteVectoresVarias(n, m, X, Y):
-    thetas = np.zeros(n+1)
+# def gradienteVectoresVarias(n, m, X, Y):
+#     thetas = np.zeros(n+1)
     
+#     media =np.mean(Y)
+#     desvTipica = np.std(Y)
+#     Y = (Y - media) / desvTipica
+    
+#     for iteration in range(NUM_ITERATIONS):
+#         NuevaTheta = thetas
+#         H = np.dot(X, thetas)
+#         Aux = (H - Y)
+#         for i in range(n+1):
+#             Aux_i = Aux * X[:, i]
+#             NuevaTheta -= (ALPHA / m) * Aux_i.sum()
+#         thetas = NuevaTheta
+#         costeActual = costeVectorizado(X,Y,thetas)
+#         #print(costeActual)
+#     print(thetas)
+
+
+#################################################################
+
+
+def gradienteProfe(n,m,X,Y):
+    thetas = np.zeros(n+1)
     media =np.mean(Y)
     desvTipica = np.std(Y)
     Y = (Y - media) / desvTipica
-    
-    for iteration in range(NUM_ITERATIONS):
-        NuevaTheta = thetas
-        H = np.dot(X, thetas)
-        Aux = (H - Y)
-        for i in range(n+1):
-            Aux_i = Aux * X[:, i]
-            NuevaTheta -= (ALPHA / m) * Aux_i.sum()
-        thetas = NuevaTheta
-        costeActual = costeVectorizado(X,Y,thetas)
-        #print(costeActual)
+    for i in range(NUM_ITERATIONS):
+        thetas = gradiente(X, Y, thetas, ALPHA)
+        print(costeVectorizado(X,Y,thetas))
     print(thetas)
 
+def gradiente(X, Y, Theta, alpha):
+    NuevaTheta = Theta
+    m = np.shape(X)[0]
+    n = np.shape(X)[1]
+    H = np.dot(X, Theta)
+    Aux = (H - Y)
+    for i in range(n):
+        Aux_i = Aux * X[:, i]
+        NuevaTheta -= (alpha / m) * Aux_i.sum()
+    return NuevaTheta
 
-    
+
 def costeVectorizado(X, Y, Theta):
     H = np.dot(X, Theta)
     Aux = (H - Y) ** 2
     return Aux.sum() / (2 * len(X))
+
+#################################################################
+
 
 
 def ecuacionNormal():
@@ -185,6 +215,8 @@ def ecuacionNormal():
     segundoElem = np.matmul(Xt,Y)
     thetas = np.matmul(primerElem,segundoElem)
     print(thetas)
+
+
     
 
 main()
