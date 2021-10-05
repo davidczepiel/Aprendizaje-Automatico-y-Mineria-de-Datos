@@ -41,6 +41,7 @@ def Regresion1Variable():
             drawFunction(X,Y,theta0,theta1)
     
     drawFunction(X,Y,theta0,theta1)
+    
     #Preparamos los datos que vamos a necesitar para a representar la el coste en una grafica 3D
     Theta0,Theta1,Coste = make_data(np.array([-10,10]),np.array([-1,4]),X,Y)
 
@@ -57,8 +58,7 @@ def Regresion1Variable():
     ax.zaxis.set_major_locator(LinearLocator(10))
     ax.zaxis.set_major_formatter('{x:.02f}')
 
-    # Add a color bar which maps values to colors.
-
+    # Añadimos la barra de color
     fig.colorbar(surf, shrink=0.5, aspect=5)
     #Mostramos la grafica 3d del coste de la funcion
     plt.show()  
@@ -123,8 +123,6 @@ def RegresionVariasVariables():
     b = np.dot(thetas, ejemplo)
     print("Valor ejemplo por descenso gradiante = ", b)
 
-
-
 def normalizarDatos(X):
     #Medias
     media =np.mean(X,axis = 0)
@@ -139,7 +137,8 @@ def descensoGradienteVariasVar(n,m,X,Y):
     thetas = np.zeros(n+1)
     costes = np.array([])
 
-    #En cada iteracion saco las nuevas thetas y me quedo con el coste de la cnfiguracion actual para mostrarlo posteriormente
+    #En cada iteracion saco las nuevas thetas y me quedo con el coste de la cnfiguracion 
+    # actual para mostrarlo posteriormente
     for i in range(NUM_ITERATIONS):
         thetas = iteracion(X, Y, thetas, ALPHA)
         costes = np.append(costes,costeVectorizado(X,Y,thetas))
@@ -156,7 +155,6 @@ def iteracion(X, Y, Theta, alpha):
     Aux = (H - Y)
     NuevaTheta -= (alpha / m) * np.dot(np.transpose(X), Aux)
     return NuevaTheta
-
 
 def costeVectorizado(X, Y, Theta):
     H = np.dot(X, Theta)
