@@ -18,14 +18,6 @@ def main():
     n = np.shape(X)[1]
     m = np.shape(X)[0]
     Y = valores[ : , -1]
-    # Obtiene un vector con los índices de los ejemplos positivos
-    posYes = np.where(Y == 1)
-    # Obtiene un vector con los índices de los ejemplos negativos
-    posNo = np.where(Y == 0)
-    # Dibuja los ejemplos positivos
-    plt.scatter(X[posYes,0] , X[posYes,1] , marker = '+' , c = 'k' )
-    plt.scatter(X[posNo,0] , X[posNo,1] , marker = 'o' , c = 'g' )
-    plt.show()
 
     X = np.hstack([np.ones([m, 1] ) , X ] )
     
@@ -33,9 +25,48 @@ def main():
     # c = cost(thetas, X, Y)
     # grad = gradient(thetas, X, Y)
 
-    opt.fmin_tnc(func=cost, x0=thetas, fprime=gradient, args=(X,Y))
+    result = opt.fmin_tnc(func=cost, x0=thetas, fprime=gradient, args=(X,Y))
     
+    print(cost(result[0],X,Y))
+    prediccion = sigmoid(np.matmul(X, result[0]))
+    prediccion = np.around(prediccion)
+    prediccion = prediccion-Y
+    numCorrectos = len(Y) - np.count_nonzero(prediccion)
+    numCorrectos = numCorrectos /len(Y)*100
+    print(numCorrectos , "%")
+
+    pinta_frontera_recta(X,Y,result[0])
     
+
+def pinta_frontera_recta(X, Y, theta):
+    plt.figure()
+    X = X[:,1:]
+
+    ###########################Mostrar Puntos
+    # Obtiene un vector con los índices de los ejemplos positivos
+    posYes = np.where(Y == 1)
+    # Obtiene un vector con los índices de los ejemplos negativos
+    posNo = np.where(Y == 0)
+    # Dibuja los ejemplos positivos
+    plt.scatter(X[posYes,0] , X[posYes,1] , marker = '+' , c = 'k' )
+    plt.scatter(X[posNo,0] , X[posNo,1] , marker = 'o' , c = 'g' )
+
+    ###########################Mostrar Recta de frontera
+    x1_min, x1_max = X[:, 0].min(), X[:, 0].max()
+    x2_min, x2_max = X[:, 1].min(), X[:, 1].max()
+
+    xx1, xx2 = np.meshgrid(np.linspace(x1_min, x1_max),
+    np.linspace(x2_min, x2_max))
+
+    h = sigmoid(np.c_[np.ones((xx1.ravel().shape[0], 1)),
+    xx1.ravel(),
+    xx2.ravel()].dot(theta))
+    h = h.reshape(xx1.shape)
+
+    # el cuarto parámetro es el valor de z cuya frontera se
+    # quiere pintar
+    plt.contour(xx1, xx2, h, [0.5], linewidths=1, colors='b')
+    plt.show()
 
 
 def sigmoid(z):
@@ -51,6 +82,8 @@ def gradient(thetas, X, Y):
     h = sigmoid(np.matmul(X, thetas))
     m = len(X)
     return np.matmul((1/m)*np.transpose(X), (h-Y))
+
+
 
 
 
