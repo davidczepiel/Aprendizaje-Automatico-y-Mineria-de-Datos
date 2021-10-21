@@ -6,11 +6,33 @@ import numpy as np
 from numpy.core.fromnumeric import size
 from pandas.io.parsers import read_csv
 import scipy.optimize as opt
+from sklearn.preprocessing import PolynomialFeatures
 
 ALPHA = 0.01
 NUM_ITERATIONS = 1500
+DELTA = 1
 
 def main():
+    parte2Practica()
+
+def parte2Practica():
+    valores = read_csv( "ex2data2.csv" , header=None).to_numpy()
+    
+    #Sacar los valores de X Y
+    X = valores[ : , : -1]
+    n = np.shape(X)[1]
+    m = np.shape(X)[0]
+    Y = valores[ : , -1]
+    X = np.hstack([np.ones([m, 1] ) , X ] ) ###########No se si esto hay qu hacerlo antes o despues de expandir los parámetros a 28
+
+    poly = PolynomialFeatures(4) #se eleva todo exponencialmente a la 6
+
+    thetas = np.zeros(np.shape(X)[1]) ##Tantas zetas como atributos haya (deberian ser 28)
+    X = poly.fit_transform(X)
+
+
+
+def parte1Practica():
     valores = read_csv( "ex2data1.csv" , header=None).to_numpy()
     
     #Separamos los valores de x e y en dos arrays
@@ -48,7 +70,6 @@ def main():
 
     #Dibujamos los datos de los alumnos junto con la recta frontera
     pinta_frontera_recta(X,Y,result[0])
-    
 
 def pinta_frontera_recta(X, Y, theta):
     plt.figure()
@@ -85,6 +106,21 @@ def pinta_frontera_recta(X, Y, theta):
 def sigmoid(z):
     return 1/(1+(np.e**(-z)))
 
+
+#Teoricamente esta es la traducción literal de la fórmula que aparece en las transparencias
+def costWithRegulation(thetas,X,Y):
+    h = sigmoid(np.matmul(X, thetas))
+    m = len(X)
+    extra = (DELTA/(2*m))*np.sum(thetas**2)
+    return (-1/m)  *  (np.matmul(np.transpose(np.log(h)), Y)  +  np.matmul(np.transpose(np.log(1-h)), (1-Y))) +extra
+
+
+#Teoricamente esta es la traducción literal de la fórmula que aparece en las transparencias
+def gradientWithRegulation(thetas, X, Y):
+    h = sigmoid(np.matmul(X, thetas))
+    m = len(X)
+    return np.matmul((1/m)*np.transpose(X), (h-Y)) + ((DELTA/m)*thetas)
+
 def cost(thetas, X, Y):
     h = sigmoid(np.matmul(X, thetas))
     m = len(X)
@@ -94,3 +130,7 @@ def gradient(thetas, X, Y):
     h = sigmoid(np.matmul(X, thetas))
     m = len(X)
     return np.matmul((1/m)*np.transpose(X), (h-Y))
+
+
+
+main()
