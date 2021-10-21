@@ -10,7 +10,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 ALPHA = 0.01
 NUM_ITERATIONS = 1500
-DELTA = 1
+LAMBDA = 1
 
 def main():
     parte2Practica()
@@ -19,18 +19,45 @@ def parte2Practica():
     valores = read_csv( "ex2data2.csv" , header=None).to_numpy()
     
     #Sacar los valores de X Y
-    X = valores[ : , : -1]
+    X = valores[ : , :-1]
     n = np.shape(X)[1]
     m = np.shape(X)[0]
     Y = valores[ : , -1]
-    X = np.hstack([np.ones([m, 1] ) , X ] ) ###########No se si esto hay qu hacerlo antes o despues de expandir los parámetros a 28
 
-    poly = PolynomialFeatures(4) #se eleva todo exponencialmente a la 6
-
-    thetas = np.zeros(np.shape(X)[1]) ##Tantas zetas como atributos haya (deberian ser 28)
+    poly = PolynomialFeatures(6) #se eleva todo exponencialmente a la 6
     X = poly.fit_transform(X)
 
+    thetas = np.zeros(np.shape(X)[1]) ##Tantas zetas como atributos haya (deberian ser 28)
+    print( "Coste para thetas 0: ", costWithRegulation(thetas, X, Y))
 
+    result = opt.fmin_tnc(func=costWithRegulation, x0=thetas, fprime=gradientWithRegulation, args=(X,Y))
+    dibujarFronteraDecision(X, Y, result[0], poly)
+
+def dibujarFronteraDecision(X, Y, thetas, poly):
+    plt.figure()
+    X = X[:,1:]
+    
+    #-------------------------------Mostrar Puntos--------------------------------#
+    # Obtiene un vector con los índices de los ejemplos positivos
+    posYes = np.where(Y == 1)
+    # Obtiene un vector con los índices de los ejemplos negativos
+    posNo = np.where(Y == 0)
+    # Dibuja los ejemplos positivos
+    plt.scatter(X[posYes,0] , X[posYes,1] , marker = '+' , c = 'k' )
+    # Dibuja los ejemplos negativos
+    plt.scatter(X[posNo,0] , X[posNo,1] , marker = 'o' , c = 'g' )
+
+    #--------------------------Mostrar Frontera----------------------------------#
+    x1_min, x1_max = X[:, 0].min(), X[:, 0].max()
+    x2_min, x2_max = X[:, 1].min(), X[:, 1].max()
+
+    xx1, xx2 = np.meshgrid(np.linspace(x1_min, x1_max),
+    np.linspace(x2_min, x2_max))
+    h = sigmoid(poly.fit_transform(np.c_[xx1.ravel(),
+        xx2.ravel()]).dot(thetas))
+    h = h.reshape(xx1.shape)
+    plt.contour(xx1, xx2, h, [0.5], linewidths=1, colors='g')
+    plt.show()
 
 def parte1Practica():
     valores = read_csv( "ex2data1.csv" , header=None).to_numpy()
@@ -48,10 +75,12 @@ def parte1Practica():
     thetas = np.zeros(n+1)
     # c = cost(thetas, X, Y)
     # grad = gradient(thetas, X, Y)
-
+    
     #Obtenemos los valores para las thetas que optimizan la función de coste
     result = opt.fmin_tnc(func=cost, x0=thetas, fprime=gradient, args=(X,Y))
     
+
+
     #Coste minimizado
     print(cost(result[0],X,Y))
     
@@ -89,12 +118,11 @@ def pinta_frontera_recta(X, Y, theta):
     x1_min, x1_max = X[:, 0].min(), X[:, 0].max()
     x2_min, x2_max = X[:, 1].min(), X[:, 1].max()
 
-    xx1, xx2 = np.meshgrid(np.linspace(x1_min, x1_max),
-    np.linspace(x2_min, x2_max))
+    xx1, xx2 = np.meshgrid(np.linspace(x1_min, x1_max),np.linspace(x2_min, x2_max))
 
     h = sigmoid(np.c_[np.ones((xx1.ravel().shape[0], 1)),
-    xx1.ravel(),
-    xx2.ravel()].dot(theta))
+        xx1.ravel(),
+        xx2.ravel()].dot(theta))
     h = h.reshape(xx1.shape)
 
     #El cuarto parámetro es el valor de z cuya frontera se
@@ -109,17 +137,17 @@ def sigmoid(z):
 
 #Teoricamente esta es la traducción literal de la fórmula que aparece en las transparencias
 def costWithRegulation(thetas,X,Y):
-    h = sigmoid(np.matmul(X, thetas))
     m = len(X)
-    extra = (DELTA/(2*m))*np.sum(thetas**2)
-    return (-1/m)  *  (np.matmul(np.transpose(np.log(h)), Y)  +  np.matmul(np.transpose(np.log(1-h)), (1-Y))) +extra
+    extra = (LAMBDA/(2*m))*np.sum(thetas**2)
+    return cost(thetas,X,Y) + extra
 
 
 #Teoricamente esta es la traducción literal de la fórmula que aparece en las transparencias
 def gradientWithRegulation(thetas, X, Y):
-    h = sigmoid(np.matmul(X, thetas))
     m = len(X)
-    return np.matmul((1/m)*np.transpose(X), (h-Y)) + ((DELTA/m)*thetas)
+    ajuste = (LAMBDA/m)*thetas
+    ajuste[0] = 0
+    return gradient(thetas, X, Y) + ajuste
 
 def cost(thetas, X, Y):
     h = sigmoid(np.matmul(X, thetas))
@@ -130,7 +158,5 @@ def gradient(thetas, X, Y):
     h = sigmoid(np.matmul(X, thetas))
     m = len(X)
     return np.matmul((1/m)*np.transpose(X), (h-Y))
-
-
 
 main()
