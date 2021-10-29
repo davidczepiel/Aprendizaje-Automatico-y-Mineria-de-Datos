@@ -52,10 +52,10 @@ def oneVsAll(X, y, num_etiquetas, reg):
         for etiqueta in range(num_etiquetas):
             probabilidades = np.append(probabilidades, sigmoid(np.matmul(X[fila], thetasMat[etiqueta])))
 
-        prediccion = np.append(prediccion, np.where(np.max(probabilidades)))
+        prediccion = np.append(prediccion, np.where(probabilidades == np.amax(probabilidades)))
     prediccion = np.where(prediccion == 0, 10, prediccion)
 
-    aciertos = prediccion - y
+    aciertos = prediccion - np.ravel(y)
     numCorrectos = len(aciertos) - np.count_nonzero(aciertos)
     #Porcentaje de predicciones acertadas
     numCorrectos = numCorrectos /len(y)*100
