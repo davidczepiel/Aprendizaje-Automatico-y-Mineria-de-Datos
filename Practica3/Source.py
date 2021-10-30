@@ -28,7 +28,8 @@ def main():
     #plt.axis('off')
     #plt.show()
 
-    oneVsAll(X, y, 10, LAMBDA)
+    thetasMat = oneVsAll(X, y, 10, LAMBDA)
+    calcularAciertos(X, y, 10, thetasMat)
 
 def oneVsAll(X, y, num_etiquetas, reg):
 
@@ -45,14 +46,12 @@ def oneVsAll(X, y, num_etiquetas, reg):
         result = opt.fmin_tnc(func=costWithRegulation, x0=thetas, fprime=gradientWithRegulation, args=(X, auxY, reg))
 
         thetasMat[i] = result[0]
+    
+    return thetasMat
 
-    prediccion = np.array([])
-    for fila in range(len(X)):
-        probabilidades = np.array([])
-        for etiqueta in range(num_etiquetas):
-            probabilidades = np.append(probabilidades, sigmoid(np.matmul(X[fila], thetasMat[etiqueta])))
-
-        prediccion = np.append(prediccion, np.where(probabilidades == np.amax(probabilidades)))
+def calcularAciertos(X, y, num_etiquetas, thetasMat):    
+    probabilidades = sigmoid(np.matmul(thetasMat, np.transpose(X)))
+    prediccion = np.argmax(probabilidades, axis=0)
     prediccion = np.where(prediccion == 0, 10, prediccion)
 
     aciertos = prediccion - np.ravel(y)
@@ -60,9 +59,6 @@ def oneVsAll(X, y, num_etiquetas, reg):
     #Porcentaje de predicciones acertadas
     numCorrectos = numCorrectos /len(y)*100
     print("Globalmente el porcentaje es = ", numCorrectos , "%")
-
-
-
 
 def sigmoid(z):
     return 1/(1+(np.e**(-z)))
