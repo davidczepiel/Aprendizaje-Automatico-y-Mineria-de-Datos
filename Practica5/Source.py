@@ -2,11 +2,12 @@ import numpy as np
 import scipy.optimize as opt
 from scipy.io import loadmat
 from matplotlib import pyplot as plt
+from scipy.optimize.zeros import _results_select
 
 LAMBDA = 1
 
 def main():
-    parte2()
+    parte3()
 
 
 def parte1():
@@ -84,6 +85,26 @@ def parte2():
     plt.show()
 
 
+def parte3():
+    #Sacamos los datos del fichero
+    data = loadmat('ex5data1.mat')
+    y = data['y']
+    X = data['X']
+    yVal = data['yval']
+    xVal = data['Xval']
+    yTest = data['ytest']
+    XTest = data['Xtest']
+
+    #Genero una matriz con las columnas especificadas a partir de las que dispongo
+    generadorDeColumnas(np.array([[1],[2],[3]]),3)
+
+
+def generadorDeColumnas(X, p):
+    result = X
+    for i in range(2,p+2):
+        nuevaColumna = X**i
+        result = np.concatenate((result, nuevaColumna),axis=1)
+    return result
 
     
 def costGradientReg(thetas, X, y, reg):
