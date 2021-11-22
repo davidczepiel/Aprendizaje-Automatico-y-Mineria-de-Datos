@@ -95,8 +95,35 @@ def parte3():
     yTest = data['ytest']
     XTest = data['Xtest']
 
+    xMin = np.min(X)
+    xMax = np.max(X)
+
+    m = np.shape(X)[0]
+    n = np.shape(X)[1]
+
+    plt.plot(X, y, "x")
+
     #Genero una matriz con las columnas especificadas a partir de las que dispongo
-    generadorDeColumnas(np.array([[1],[2],[3]]),3)
+    X = generadorDeColumnas(X,7)
+    X , media, desvTipica = normalizeData(X)
+    X = np.hstack([np.ones([m, 1] ) , X ] )
+
+    #Le pedimos a minimize que nos calcule las thetas que minimizan el coste por nosotros
+
+    auxX = np.linspace(xMin,xMax,(int)((xMax-xMin)/0.05))
+    auxX = np.reshape(auxX,(np.shape(auxX)[0],1))
+    auxX = generadorDeColumnas(auxX,7)
+    auxX = (auxX - media) / desvTipica
+    thetas = np.zeros(8)
+
+    fmin = opt.minimize(fun=costGradientReg, x0=thetas, args=(X, y , 0), 
+                        method='TNC', jac=True, options={'maxiter': 70})##MAL
+    thetas = fmin.x
+
+    h = np.dot(auxX,thetas)
+    plt.plot(np.linspace(xMin,xMax,(xMax-xMin)/0.05), h, "o")
+
+
 
 
 def generadorDeColumnas(X, p):
@@ -105,6 +132,15 @@ def generadorDeColumnas(X, p):
         nuevaColumna = X**i
         result = np.concatenate((result, nuevaColumna),axis=1)
     return result
+
+def normalizeData(X):
+    #Medias
+    media =np.mean(X,axis = 0)
+    #desviaciones tipicas
+    desvTipica = np.std(X,axis = 0)
+    #Realizo la normalizacion en todo excepto en la fila de unos para no dejar un valor nan
+    X = (X - media) / desvTipica
+    return X, media, desvTipica
 
     
 def costGradientReg(thetas, X, y, reg):
