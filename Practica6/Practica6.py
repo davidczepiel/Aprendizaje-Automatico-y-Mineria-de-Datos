@@ -51,10 +51,8 @@ def parte3():
     X = data['X']
     xVal = data['Xval']
     yVal = data['yval']
-    C =1
-    sigma = 0.1
-    #Utilizo la SVM para que me saque una boundary
 
+    #Utilizo la SVM para que me saque una boundary
     C_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
     sigma_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
     scores = np.zeros((len(C_vec), len(sigma_vec)))
@@ -78,12 +76,78 @@ def parte3():
     mostrar_grafica(X,y,svm)
 
 def parte4():
-    
-    hardHam_emails = generateXs("hard_ham", 250)
+    #Sacamos los datos de todos los emails
     spam_emails = generateXs("spam", 500)
-    easyHam_emails = generateXs("easy_ham", 2551)
+    y_Spam = np.ones(len(spam_emails))
 
-    print("Hola")
+    hardHam_emails = generateXs("hard_ham", 250)
+    y_HardHam = np.zeros(len(hardHam_emails))
+
+    easyHam_emails = generateXs("easy_ham", 2551)
+    y_EasyHam = np.zeros(len(easyHam_emails))
+
+
+    #Toca formar lo que considerariamos X, Xval y XTest
+    #Primer 60% para entrenar
+    X = np.array({})
+    y = np.array({})
+    X = spam_emails[:int(500*0.6)]
+    y = y_Spam[:int(500*0.6)]
+    X = np.append(X,hardHam_emails[:int(250*0.6)], axis=0)
+    X = np.append(X,easyHam_emails[:int(2551*0.6)], axis=0)
+    y = np.append(y,y_HardHam[:int(250*0.6)])
+    y = np.append(y,y_EasyHam[:int(2551*0.6)])
+
+    #del 60% al 90% para validar
+    xVal = np.array({})
+    yVal = np.array({})
+    xVal = spam_emails[int(500*0.6) : int(500*0.9)]
+    yVal = y_Spam[int(500*0.6) : int(500*0.9)]
+    xVal = np.append(xVal,hardHam_emails[int(250*0.6) : int(250*0.9)], axis=0)
+    xVal = np.append(xVal,easyHam_emails[int(2551*0.6) : int(2551*0.9)], axis=0)
+    yVal = np.append(yVal,y_HardHam[int(250*0.6): int(250*0.9)])
+    yVal = np.append(yVal,y_EasyHam[int(2551*0.6) : int(2551*0.9)])
+
+    #Del 90% en adelante para testear
+    xTest = np.array({})
+    yTest = np.array({})
+    xTest = spam_emails[int(500*0.9):]
+    yTest = y_Spam[int(500*0.9) :]
+    xTest = np.append(xTest,hardHam_emails[int(250*0.9) :], axis=0)
+    xTest = np.append(xTest,easyHam_emails[int(2551*.9) :], axis=0)
+    yTest = np.append(yTest,y_HardHam[int(250*0.9):])
+    yTest = np.append(yTest,y_EasyHam[int(2551*0.9) :])
+
+    separarSpam(X,y,xVal,yVal,xTest,yTest)
+
+
+def separarSpam(X,y,xVal,yVal,xTest,yTest):
+    #Utilizo la SVM para que me saque una boundary
+    C_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    sigma_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    scores = np.zeros((len(C_vec), len(sigma_vec)))
+    best = np.array([0.,0.])
+    minScore = -1
+
+    #saco los aciertos para cada uno de los casos de prueba
+    for i in range(len(C_vec)): #for que recorre las Cs
+        for j in range(len(sigma_vec)): #for que recorre las gammas
+            svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2) )    
+            svm.fit(X, y )
+            newScore = svm.score(xVal,yVal)
+            scores[i][j] = newScore
+            #Si he conseguido un mejor porcentage me quedo con ela configuracion
+            if newScore > minScore:
+                minScore = newScore
+                best[0]= C_vec[i]
+                best[1]= sigma_vec[j]
+
+    #Entreno para la mejor de las configuraciones y saco el score de adivinar con los caos de test
+    svm = SVC(kernel='rbf' , C=  best[0], gamma=1 / ( 2 * best[1] **2) )    
+    svm.fit(X, y)
+    newScore = svm.score(xTest,yTest)
+    print("Porcentaje de aciertos de spam: ", newScore*100 , "%")
+
 
 
 def mostrar_grafica(X, y, svm):
