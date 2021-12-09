@@ -12,6 +12,7 @@ from scipy.io import loadmat
 
 LAMBDA = 0.1
 
+
 def main():
     parte1()
     #parte2()
