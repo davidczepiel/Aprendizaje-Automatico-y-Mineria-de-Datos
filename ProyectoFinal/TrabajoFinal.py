@@ -3,9 +3,11 @@ from pandas.io.parsers import read_csv
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize as opt
+from sklearn.svm import SVC
+
 
 MAX_LETRAS = 28
-NUM_LETRAS = 3
+NUM_LETRAS = 2
 LAMBDA = 0.1
 
 
@@ -13,8 +15,9 @@ def main():
     #Sacamos los datos de los ficheros
     valores = read_csv( "csvTrainImages 13440x1024.csv" , header=None).to_numpy()
     valoresY = np.ravel(read_csv( "csvTrainLabel 13440x1.csv" , header=None).to_numpy())
+
     valoresTest = read_csv( "csvTestImages 3360x1024.csv" , header=None).to_numpy()
-    valoresYTest = read_csv( "csvTestLabel 3360x1.csv" , header=None).to_numpy()
+    valoresYTest = np.ravel(read_csv( "csvTestLabel 3360x1.csv" , header=None).to_numpy())
 
     #Sacamos los indices de las filas que cumplen que NUM_LETRAS primeras letras del abecedario
     indices = np.where(valoresY <= NUM_LETRAS)
@@ -26,31 +29,45 @@ def main():
 
     #Sacamos el 70% de los casos para el entrenamiento
     XTrain = X[:(int)(m*0.7),:]
-    YTrain = Y[ (int) (m*0.7):]
+    YTrain = Y[:(int)(m*0.7)]
 
     #Sacamos el 30% restante para el proceso de validacion
-    XVal = X[ (int)(m*0.7) : , : ]
-    YVal = Y[ (int)(m*0.7) : ]
+    XVal = X[(int)(m*0.7) : , : ]
+    YVal = Y[(int)(m*0.7):]
 
     #Hacemos lo mismo con los de test
     indicesTest = np.where(valoresYTest <= NUM_LETRAS)
     XTest = valoresTest[indicesTest]
     YTest = valoresYTest[indicesTest]
 
-    regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
+    #regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
+    #redes_neuronales(XTrain,YTrain,XVal,YVal,XTest,YTest)
+    #SupportVectorMachines(XTrain,YTrain,XVal,YVal,XTest,YTest)
 
 
 
+#################################################################
+#####################################REGRESION LOGISCTICA
+###############################################
 def regresion_Logistica(Xent, Yent, Xval,Yval,XTest,YTest):
-    valoresLambda = np.array([0.01,0.03])
+    #Estos son los valores de lambda con los que vamos a probar
+    valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10])
 
+    #en estas variables nos vamos a quedar la configuracion que mejor resultado nos ha dado
     mejorLambda = 0.01
     mejorAcierto = 0
+
+    porcentajesSacados = np.array([])
+
+    #Por cada configuracion, entrenamos y validamos con los casos de validacion, si el resultado es mas favorable que el
+    #mejor que hemos obtenido nos lo guardamos
     for i in valoresLambda:
         #Obtenemos las thetas que predicen un numero concreto
         thetasMat = oneVsAll(Xent, Yent, NUM_LETRAS, i)
         #Con estas thetas vemos cuandos valores que predecimos son iguales al valor real
         aciertosActual =calcularAciertos(Xval, Yval, NUM_LETRAS, thetasMat)
+        porcentajesSacados = np.append(porcentajesSacados, aciertosActual)
+        #Si es mas favorable que la mejor configuracion que me he guardado me la guardo
         if aciertosActual > mejorAcierto:
             mejorAcierto = aciertosActual
             mejorLambda = i
@@ -58,8 +75,7 @@ def regresion_Logistica(Xent, Yent, Xval,Yval,XTest,YTest):
     thetasMat = oneVsAll(Xent, Yent, NUM_LETRAS, mejorLambda)
     aciertosFinal = calcularAciertos(XTest,YTest, NUM_LETRAS, thetasMat)
     print("REGRESION LOGISTICA Mejor LAMBDA:",mejorLambda,"Porcentaje de aciertos:",aciertosFinal,"%")
-
-
+    print("Los '%' sacados son ", porcentajesSacados)
 
 def oneVsAll(X, y, num_etiquetas, reg):
 
@@ -130,6 +146,55 @@ def gradient(thetas, X, Y):
     m = len(X)
     return np.matmul((1/m)*np.transpose(X), (h-Y))
 
+##############################################
+#####################################REGRESION LOGISCTICA
+#################################################################
 
+
+#################################################################
+#####################################REDES NEURONALES
+###############################################
+
+##############################################
+#####################################REDES NEURONALES
+#################################################################
+
+
+
+#################################################################
+#####################################SUPPORT VECTOR MACHINES 
+###############################################
+
+def SupportVectorMachines(X,y,xVal,yVal,xTest,yTest):
+    #Utilizo la SVM para que me saque una boundary
+    C_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    sigma_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    scores = np.zeros((len(C_vec), len(sigma_vec)))
+    best = np.array([0.,0.])
+    minScore = -1
+
+    #saco los aciertos para cada uno de los casos de prueba
+    for i in range(len(C_vec)): #for que recorre las Cs
+        for j in range(len(sigma_vec)): #for que recorre las gammas
+            svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2) )    
+            svm.fit(X, y )
+            newScore = svm.score(xVal,yVal)
+            scores[i][j] = newScore
+            #Si he conseguido un mejor porcentage me quedo con ela configuracion
+            if newScore > minScore:
+                minScore = newScore
+                best[0]= C_vec[i]
+                best[1]= sigma_vec[j]
+
+    #Entreno para la mejor de las configuraciones y saco el score de adivinar con los caos de test
+    svm = SVC(kernel='rbf' , C=  best[0], gamma=1 / ( 2 * best[1] **2) )    
+    svm.fit(X, y)
+    newScore = svm.score(xTest,yTest)
+    print("Porcentaje de aciertos de alfabeto arabe: ", newScore*100 , "%")
+
+
+##############################################
+#####################################SUPPORT VECTOR MACHINES 
+#################################################################
 
 main()
