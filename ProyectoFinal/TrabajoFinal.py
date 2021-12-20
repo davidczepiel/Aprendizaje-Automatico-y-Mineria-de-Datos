@@ -7,7 +7,7 @@ from sklearn.svm import SVC
 
 
 MAX_LETRAS = 28
-NUM_LETRAS = 2
+NUM_LETRAS = 5
 LAMBDA = 0.1
 
 
@@ -40,7 +40,7 @@ def main():
     XTest = valoresTest[indicesTest]
     YTest = valoresYTest[indicesTest]
 
-    #regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
+    regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
     #redes_neuronales(XTrain,YTrain,XVal,YVal,XTest,YTest)
     #SupportVectorMachines(XTrain,YTrain,XVal,YVal,XTest,YTest)
 
@@ -50,44 +50,59 @@ def main():
 #####################################REGRESION LOGISCTICA
 ###############################################
 def regresion_Logistica(Xent, Yent, Xval,Yval,XTest,YTest):
+
+    #Les metemos a cada uno de nuestros grupos de datos la columna de 1s 
+    #para poder vectorizar comodamente
+    m = np.shape(Xent)[0]
+    Xent = np.hstack([np.ones([m, 1] ) , Xent ])
+    m = np.shape(Xval)[0]
+    Xval = np.hstack([np.ones([m, 1] ) , Xval ])
+    m = np.shape(XTest)[0]
+    XTest = np.hstack([np.ones([m, 1] ) , XTest ])
+
     #Estos son los valores de lambda con los que vamos a probar
     valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10])
+
 
     #en estas variables nos vamos a quedar la configuracion que mejor resultado nos ha dado
     mejorLambda = 0.01
     mejorAcierto = 0
 
+    #En este array se almacenan los porcentajes obtenidos por cada una de las configuraciones
     porcentajesSacados = np.array([])
 
     #Por cada configuracion, entrenamos y validamos con los casos de validacion, si el resultado es mas favorable que el
     #mejor que hemos obtenido nos lo guardamos
-    for i in valoresLambda:
+    for LambdaActual in valoresLambda:
         #Obtenemos las thetas que predicen un numero concreto
-        thetasMat = oneVsAll(Xent, Yent, NUM_LETRAS, i)
+        thetasMat = oneVsAll(Xent, Yent, NUM_LETRAS, LambdaActual)
         #Con estas thetas vemos cuandos valores que predecimos son iguales al valor real
         aciertosActual =calcularAciertos(Xval, Yval, NUM_LETRAS, thetasMat)
         porcentajesSacados = np.append(porcentajesSacados, aciertosActual)
         #Si es mas favorable que la mejor configuracion que me he guardado me la guardo
         if aciertosActual > mejorAcierto:
+            mejorLambda = LambdaActual
             mejorAcierto = aciertosActual
-            mejorLambda = i
 
+    #Una vez que hemos sacado la mejor configuracion volvemos a entrenar con esta
+    #Y probamos a predecir los casos de testeo
     thetasMat = oneVsAll(Xent, Yent, NUM_LETRAS, mejorLambda)
     aciertosFinal = calcularAciertos(XTest,YTest, NUM_LETRAS, thetasMat)
-    print("REGRESION LOGISTICA Mejor LAMBDA:",mejorLambda,"Porcentaje de aciertos:",aciertosFinal,"%")
-    print("Los '%' sacados son ", porcentajesSacados)
+    print("//////////////////Regresion logistica///////////////////////////")
+    print("Los '%' sacados con los casos de validacion son: ", porcentajesSacados)
+    print("REGRESION LOGISTICA Mejor LAMBDA:",mejorLambda,"Porcentaje de aciertos sobre casos de testeo:",aciertosFinal,"%")
+    print("//////////////////Regresion logistica///////////////////////////")
 
 def oneVsAll(X, y, num_etiquetas, reg):
 
     #Empezamos con las thetas sin valor
     thetasMat = np.zeros((num_etiquetas, np.shape(X)[1]))
-    for i in range(num_etiquetas):
+
+    #Recorremos desde el 1 hasta el numero de letras que haya que clasificar
+    for i in range(1,num_etiquetas+1):  # [1 , num_etiquetas+1)
         #Para cada una de las etiquetas me quedo solo con aquellas Ys que
         #que se corresponden con la etiqueta que estoy analizando
-        if i==0:
-            auxY = (y==10)*1 #Para la etiqueta hacemos la conversion con 10
-        else:
-            auxY = (y==i)*1
+        auxY = (y==i)*1
 
         #Desplegamos Y porque si no hay problemas con las dimensiones de las matrices
         auxY = np.ravel(auxY)
@@ -95,7 +110,7 @@ def oneVsAll(X, y, num_etiquetas, reg):
 
         #Nos guardamos las thetas que predicen la etiqueta que estamos analizando actualmente
         result = opt.fmin_tnc(func=costWithRegulation, x0=thetas, fprime=gradientWithRegulation, args=(X, auxY, reg))
-        thetasMat[i] = result[0]
+        thetasMat[i-1] = result[0]
     
     return thetasMat
 
@@ -105,8 +120,9 @@ def calcularAciertos(X, y, num_etiquetas, thetasMat):
     probabilidades = sigmoid(np.matmul(thetasMat, np.transpose(X)))
     #Nos quedamos con aquel que este mas seguro
     prediccion = np.argmax(probabilidades, axis=0)
-    #Hacemos la conversion de aquellos que representen 0
-    prediccion = np.where(prediccion == 0, 10, prediccion)
+    #Aumento en 1 todos los valores debido a que prediccion trata valores comprendidos en [0,num_etiquetas) 
+    #e "y" trata el rango [1,num_etiquetas+1)
+    prediccion = prediccion + 1
 
     #Restamos nuestra prediccion con el valor real de cada caso
     #de esta forma aquellos casos en los que hayamos acertado el resultado
@@ -151,13 +167,25 @@ def gradient(thetas, X, Y):
 #################################################################
 
 
+
+
+
+
 #################################################################
 #####################################REDES NEURONALES
 ###############################################
 
+
+
+
+
 ##############################################
 #####################################REDES NEURONALES
 #################################################################
+
+
+
+
 
 
 
@@ -166,31 +194,42 @@ def gradient(thetas, X, Y):
 ###############################################
 
 def SupportVectorMachines(X,y,xVal,yVal,xTest,yTest):
-    #Utilizo la SVM para que me saque una boundary
+
+    #Estas son todas las configuraciones que vamos a probar para las SVM 
     C_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
     sigma_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    #En scores vamos a almacenar las puntuaciones que nos den cada configuracion
     scores = np.zeros((len(C_vec), len(sigma_vec)))
+    #En best nos vamos a guardar la mejor configuracion hasta el momento
     best = np.array([0.,0.])
-    minScore = -1
+    #maxScore nos permite comprobar si la configuracion actual es mejor que la 
+    #que teniamos guardada como mas optima
+    maxScore = -1
 
     #saco los aciertos para cada uno de los casos de prueba
     for i in range(len(C_vec)): #for que recorre las Cs
         for j in range(len(sigma_vec)): #for que recorre las gammas
+
+            #Entreno la SVM con los casos de entrenamiento y saco la puntuacion que obtiene sobre los casos
+            #de validacion
             svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2) )    
             svm.fit(X, y )
             newScore = svm.score(xVal,yVal)
             scores[i][j] = newScore
-            #Si he conseguido un mejor porcentage me quedo con ela configuracion
-            if newScore > minScore:
-                minScore = newScore
+
+            #Si he conseguido un mejor porcentage me quedo con esta configuracion
+            if newScore > maxScore:
+                maxScore = newScore
                 best[0]= C_vec[i]
                 best[1]= sigma_vec[j]
 
-    #Entreno para la mejor de las configuraciones y saco el score de adivinar con los caos de test
+    #Entreno para la mejor de las configuraciones y saco el score de adivinar con los casos de test
     svm = SVC(kernel='rbf' , C=  best[0], gamma=1 / ( 2 * best[1] **2) )    
     svm.fit(X, y)
     newScore = svm.score(xTest,yTest)
+    print("//////////////////SVM///////////////////////////")
     print("Porcentaje de aciertos de alfabeto arabe: ", newScore*100 , "%")
+    print("//////////////////SVM///////////////////////////")
 
 
 ##############################################
