@@ -4,11 +4,14 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize as opt
 from sklearn.svm import SVC
+from sklearn.preprocessing import PolynomialFeatures
 
 
 MAX_LETRAS = 28
-NUM_LETRAS = 5
+NUM_LETRAS = 3
 LAMBDA = 0.1
+FACTOR_DE_REBAJADO = 0.1
+
 
 
 def main():
@@ -40,9 +43,38 @@ def main():
     XTest = valoresTest[indicesTest]
     YTest = valoresYTest[indicesTest]
 
+    # XTrain ,YTrain = rebajar_Datos(XTrain,YTrain,FACTOR_DE_REBAJADO)
+    # XVal,YVal = rebajar_Datos(XVal,YVal,FACTOR_DE_REBAJADO)
+    # XTest,YTest = rebajar_Datos(XTest,YTest,FACTOR_DE_REBAJADO)
+
     regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
     #redes_neuronales(XTrain,YTrain,XVal,YVal,XTest,YTest)
     #SupportVectorMachines(XTrain,YTrain,XVal,YVal,XTest,YTest)
+
+
+
+def rebajar_Datos(X,Y, porcentaje):
+
+    auxX = np.array([])
+    auxX = np.array([])
+    resultX = np.empty((0,1024))
+    resultY = np.array([])
+    auxX = np.empty_like(X)
+    
+
+    for i in range(1,NUM_LETRAS+1):
+        indicesLetra = np.where(Y == i)
+        auxX = X[indicesLetra]
+        auxY = Y[indicesLetra]
+        limit = np.shape(auxX)[0]*porcentaje
+        limit = (int)(limit)
+        resultY = np.append(resultY, auxY[:(int)(limit) ])
+        resultX = np.append(resultX, auxX[ : (int)(limit),:], axis=0)
+
+    return resultX, resultY 
+
+
+
 
 
 
@@ -61,8 +93,7 @@ def regresion_Logistica(Xent, Yent, Xval,Yval,XTest,YTest):
     XTest = np.hstack([np.ones([m, 1] ) , XTest ])
 
     #Estos son los valores de lambda con los que vamos a probar
-    valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10])
-
+    valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10,30])
 
     #en estas variables nos vamos a quedar la configuracion que mejor resultado nos ha dado
     mejorLambda = 0.01
