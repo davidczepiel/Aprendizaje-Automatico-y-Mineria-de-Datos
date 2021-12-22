@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import random
 from pandas.io.parsers import read_csv
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -47,9 +48,9 @@ def main():
     # XVal,YVal = rebajar_Datos(XVal,YVal,FACTOR_DE_REBAJADO)
     # XTest,YTest = rebajar_Datos(XTest,YTest,FACTOR_DE_REBAJADO)
 
-    regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
+    #regresion_Logistica(XTrain,YTrain,XVal,YVal,XTest,YTest)
     #redes_neuronales(XTrain,YTrain,XVal,YVal,XTest,YTest)
-    #SupportVectorMachines(XTrain,YTrain,XVal,YVal,XTest,YTest)
+    SupportVectorMachines(XTrain,YTrain,XVal,YVal,XTest,YTest,X,Y)
 
 
 
@@ -224,7 +225,7 @@ def gradient(thetas, X, Y):
 #####################################SUPPORT VECTOR MACHINES 
 ###############################################
 
-def SupportVectorMachines(X,y,xVal,yVal,xTest,yTest):
+def SupportVectorMachines(X,y,xVal,yVal,xTest,yTest,XWhole, YWhole ):
 
     #Estas son todas las configuraciones que vamos a probar para las SVM 
     C_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
@@ -240,27 +241,89 @@ def SupportVectorMachines(X,y,xVal,yVal,xTest,yTest):
     #saco los aciertos para cada uno de los casos de prueba
     for i in range(len(C_vec)): #for que recorre las Cs
         for j in range(len(sigma_vec)): #for que recorre las gammas
-
+            print("\nComprobando la config [", C_vec[i],",",sigma_vec[j],"]")
             #Entreno la SVM con los casos de entrenamiento y saco la puntuacion que obtiene sobre los casos
             #de validacion
-            svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2) )    
+            svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2)) 
             svm.fit(X, y )
+
             newScore = svm.score(xVal,yVal)
             scores[i][j] = newScore
-
             #Si he conseguido un mejor porcentage me quedo con esta configuracion
             if newScore > maxScore:
                 maxScore = newScore
                 best[0]= C_vec[i]
                 best[1]= sigma_vec[j]
+                print("Nueva max Score: ", maxScore, "con la configuracion ",best)
 
     #Entreno para la mejor de las configuraciones y saco el score de adivinar con los casos de test
     svm = SVC(kernel='rbf' , C=  best[0], gamma=1 / ( 2 * best[1] **2) )    
     svm.fit(X, y)
+    
     newScore = svm.score(xTest,yTest)
     print("//////////////////SVM///////////////////////////")
     print("Porcentaje de aciertos de alfabeto arabe: ", newScore*100 , "%")
     print("//////////////////SVM///////////////////////////")
+
+
+
+
+def SupportVectorMachinesMasIteraciones(X,y,xVal,yVal,xTest,yTest,XWhole, YWhole ):
+
+    #Estas son todas las configuraciones que vamos a probar para las SVM 
+    C_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    sigma_vec = [0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30]
+    #En scores vamos a almacenar las puntuaciones que nos den cada configuracion
+    scores = np.zeros((len(C_vec), len(sigma_vec)))
+    #En best nos vamos a guardar la mejor configuracion hasta el momento
+    best = np.array([0.,0.])
+    #maxScore nos permite comprobar si la configuracion actual es mejor que la 
+    #que teniamos guardada como mas optima
+    maxScore = -1
+
+    #Saco un conjunto de sets aleatorio del 30% para el set de validacion y el resto para el de entrenamiento
+    m = np.shape(XWhole)[0]
+    porcentajeScores = np.array([0.0,0.0,0.0])
+
+    #saco los aciertos para cada uno de los casos de prueba
+    for i in range(len(C_vec)): #for que recorre las Cs
+        for j in range(len(sigma_vec)): #for que recorre las gammas
+            print("\nComprobando la config [", C_vec[i],",",sigma_vec[j],"]")
+            for veces in range(3):
+                randomIndexes = np.random.rand((int)(m*0.3)) * m
+                randomIndexes = randomIndexes.astype(int)
+                xVal = XWhole[randomIndexes]
+                yVal = YWhole[randomIndexes]
+                X = np.delete(XWhole, randomIndexes, axis=0)
+                y = np.delete(YWhole, randomIndexes)
+
+                print("La A sale ", np.count_nonzero(y == 1), " veces la B ", np.count_nonzero(y == 2)," veces la C ", np.count_nonzero(y == 3)  )
+                #Entreno la SVM con los casos de entrenamiento y saco la puntuacion que obtiene sobre los casos
+                #de validacion
+                svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2)) 
+                svm.fit(X, y )
+                porcentajeScores[veces] = svm.score(xVal,yVal)
+            print(porcentajeScores)
+
+            newScore = svm.score(xVal,yVal)
+            newScore = np.sum(porcentajeScores)/3.0
+            scores[i][j] = newScore
+            #Si he conseguido un mejor porcentage me quedo con esta configuracion
+            if newScore > maxScore:
+                maxScore = newScore
+                best[0]= C_vec[i]
+                best[1]= sigma_vec[j]
+                print("Nueva max Score: ", maxScore, "con la configuracion ",best)
+
+    #Entreno para la mejor de las configuraciones y saco el score de adivinar con los casos de test
+    svm = SVC(kernel='rbf' , C=  best[0], gamma=1 / ( 2 * best[1] **2) )    
+    svm.fit(X, y)
+    
+    newScore = svm.score(xTest,yTest)
+    print("//////////////////SVM///////////////////////////")
+    print("Porcentaje de aciertos de alfabeto arabe: ", newScore*100 , "%")
+    print("//////////////////SVM///////////////////////////")
+
 
 
 ##############################################
