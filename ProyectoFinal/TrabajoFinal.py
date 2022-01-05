@@ -1,3 +1,4 @@
+from sys import path_importer_cache
 import numpy as np
 from numpy import random
 from pandas.io.parsers import read_csv
@@ -9,7 +10,7 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 MAX_LETRAS = 28
-NUM_LETRAS = 3
+NUM_LETRAS = 2
 FACTOR_DE_REBAJADO = 0.1
 NUM_ITERATIONS_CROSS_VALIDATION = 3
 
@@ -35,9 +36,9 @@ def main():
     X = np.clip(X,0,1)
     XTest = np.clip(XTest,0,1)
 
-    #regresion_Logistica(X,Y,XTest,YTest)
+    regresion_Logistica(X,Y,XTest,YTest)
     #redes_neuronales(X,Y,XTest,YTest)
-    SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
+    #SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
 
 
 
@@ -68,12 +69,12 @@ def rebajar_Datos(X,Y, porcentaje):
 def separarEntrenaiento_Validacion(X,Y, porcentaje):
 
     #Set de entrenamiento
-    resultTrainX = np.empty((0,1024))
-    resultTrainY = np.array([])
+    resultTrainX = np.empty((0,np.shape(X)[1]), dtype=int)
+    resultTrainY = np.array([], dtype= int)
 
     #Set de validacion
-    resultValX = np.empty((0,1024))
-    resultValY = np.array([])    
+    resultValX = np.empty((0,np.shape(X)[1]), dtype=int)
+    resultValY = np.array([], dtype=int)    
 
     for i in range(1,NUM_LETRAS+1):
         #Me quedo con los elementos que representan la letra que estoy analizando ahora
@@ -125,19 +126,9 @@ def regresion_Logistica(XWhole, YWhole, XTest, YTest ):
 
         #Vamos a hacer el proceso de validacion 3 veces y cada una con datos distintos para sacar una media
         for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-            #Obtenemos 2 indices aleatorios entres los que vamos a sacar los nuevos datos de validacion
-            firstIndex = (int)(np.random.rand(1) * (m*0.35))
-            lastIndex = (int)(firstIndex + (m*0.65))
-            randomIndexes = range(firstIndex, lastIndex)
-
-            #separamos set de validacion y set de entrenamiento
-            xVal = XWhole[firstIndex:lastIndex,:]
-            yVal = YWhole[firstIndex:lastIndex]
-            X = np.delete(XWhole, randomIndexes, axis=0)
-            y = np.delete(YWhole, randomIndexes)
-    
+            xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(XWhole,YWhole,0.35)
             #Obtenemos las thetas que predicen un numero concreto
-            thetasMat = oneVsAll(X, y, NUM_LETRAS, LambdaActual)
+            thetasMat = oneVsAll(xTrain, yTrain, NUM_LETRAS, LambdaActual)
             porcAciertosActual = calcularAciertos(xVal, yVal, NUM_LETRAS, thetasMat)
             porcentajeScores[veces] = porcAciertosActual
         
@@ -145,27 +136,41 @@ def regresion_Logistica(XWhole, YWhole, XTest, YTest ):
         porcentajesSacados = np.append(porcentajesSacados, np.sum(porcentajeScores)/3)
         
         #Si es mas favorable que la mejor configuracion que me he guardado me la guardo
-        if porcAciertosActual > mejorPorcAciertos:
+        if np.sum(porcentajeScores)/3 > mejorPorcAciertos:
             mejorLambda = LambdaActual
-            mejorPorcAciertos = porcAciertosActual
+            mejorPorcAciertos = np.sum(porcentajeScores)/3
 
     #Una vez que hemos sacado la mejor configuracion volvemos a entrenar con esta
     #Obtenemos otra vez un set de entrenamiento aleatorio
-    firstIndex = (int)(np.random.rand(1) * (m*0.35))
-    lastIndex = (int)(firstIndex + (m*0.65))
-    randomIndexes = range(firstIndex, lastIndex)
-    X = np.delete(XWhole, randomIndexes, axis=0)
-    y = np.delete(YWhole, randomIndexes)
+    xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(XWhole,YWhole,0.35)
+
 
     #Y probamos a predecir los casos de testeo
-    thetasMat = oneVsAll(X, y, NUM_LETRAS, mejorLambda)
+    thetasMat = oneVsAll(xTrain, yTrain, NUM_LETRAS, mejorLambda)
     aciertosFinal = calcularAciertos(XTest,YTest, NUM_LETRAS, thetasMat)
     print("//////////////////Regresion logistica///////////////////////////")
     print("Los '%' sacados con los casos de validacion son: ", porcentajesSacados)
     print("REGRESION LOGISTICA Mejor LAMBDA:",mejorLambda,"Porcentaje de aciertos sobre casos de testeo:",aciertosFinal,"%")
     print("//////////////////Regresion logistica///////////////////////////")
 
+    #Generamos la grafica que representa los datos obtenidos
+    GenerarGraficaLambdasPorcentajes(valoresLambda, porcentajesSacados)
 
+def GenerarGraficaLambdasPorcentajes(thetasUtilizadas,porcSacados):
+    #Sacamos los strings que representan las thetas y van a mostrarse en el eje de las X
+    strings = ["%.2f" % number for number in thetasUtilizadas]
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    #Ponemos los textos en el eje de las X
+    plt.xticks(np.arange(len(thetasUtilizadas)), strings)
+    #Mostramos los datos
+    plt.scatter(np.arange(len(thetasUtilizadas)), porcSacados, color='red', marker='o')
+
+    #Se pone encima de cada uno de los puntos el valor que representa debido a que vamos a estar trabajando con valores
+    #que pueden variar poco, asi se ve claramente su valor
+    for i, v in enumerate(porcSacados):
+        ax.annotate(str(round(v, 2)), xy=(i,v), xytext=(-7,7), textcoords='offset points')
+    plt.show()
 
 def oneVsAll(X, y, num_etiquetas, reg):
     #Empezamos con las thetas sin valor
@@ -278,6 +283,7 @@ def redes_neuronales(X,Y,XTest,YTest):
     mejorLambda = 0.01
     mejorPorcAcierto = 0
     porcentajeScores = np.array([0.0,0.0,0.0])
+    porcentajesScoresArray = np.array([])
 
     #Mediante validacion cruzada vamos a analizar todas las lambdas para obtener la mejor
     for lambdaActual in valoresLambda:
@@ -285,16 +291,7 @@ def redes_neuronales(X,Y,XTest,YTest):
         #Para cada lambda entreno y valido con 3 conjuntos de entrenamiento y
         #validacion distintos
         for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-            #Sacamos aleatoriamente los datos del set de validacion
-            firstIndex = (int)(np.random.rand(1) * (m*0.35))
-            lastIndex = (int)(firstIndex + (m*0.65))
-            xVal = X[firstIndex:lastIndex,:]
-            yVal = Y[firstIndex:lastIndex]
-
-            #Este set lo eliminamos del total para sacar el de entrenamiento
-            randomIndexes = range(firstIndex, lastIndex)
-            xTrain = np.delete(X, randomIndexes, axis=0)
-            yTrain = np.delete(Y, randomIndexes)
+            xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
             y_onehot = np.zeros((np.shape(xTrain)[0], NUM_LETRAS))
             for i in range(np.shape(xTrain)[0]):
                 y_onehot[i][yTrain[i]] = 1
@@ -306,6 +303,7 @@ def redes_neuronales(X,Y,XTest,YTest):
             porcentajeScores[veces] = (np.sum(correctos) / len(correctos)) * 100
         
         porcentajeLamdaActual = np.sum(porcentajeScores)/3
+        porcentajesScoresArray = np.append(porcentajesScoresArray, porcentajeLamdaActual)
         print( "Con lambda: ", lambdaActual, " Aciertos: " , porcentajeLamdaActual , "%")
 
         #Si hemos encontrado una configuracion mejor que la actual nos la guardamos
@@ -321,6 +319,12 @@ def redes_neuronales(X,Y,XTest,YTest):
     correctos = prediccionConRedNeuronal(XTest, YTest,params,num_entries, num_hidden, num_labels,X, y_onehot, lambdaActual)
     porcAciertosTest = (np.sum(correctos) / len(correctos)) * 100
     print( "Con la mejor lambda: ", mejorLambda, " Aciertos totales: " , porcAciertosTest , "%")
+
+    #generamos la grafica
+    GenerarGraficaLambdasPorcentajes(valoresLambda, porcentajesScoresArray)
+
+
+
 
 
 def prediccionConRedNeuronal(X,Y, params, num_entries, num_hidden, num_labels, XTrain, y_onehot, lambdaActual):
