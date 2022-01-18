@@ -69,7 +69,7 @@ def rebajar_Datos(X,Y, porcentaje):
     return resultX, resultY 
 
 
-def separarEntrenaiento_Validacion(X,Y, porcentaje):
+def separarEntrenamiento_Validacion(X,Y, porcentaje):
 
     #Set de entrenamiento
     resultTrainX = np.empty((0,np.shape(X)[1]), dtype=int)
@@ -131,7 +131,7 @@ def regresion_Logistica(XWhole, YWhole, XTest, YTest ):
 
             #Vamos a hacer el proceso de validacion 3 veces y cada una con datos distintos para sacar una media
             for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-                xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(XWhole,YWhole,0.35)
+                xTrain , yTrain, xVal, yVal = separarEntrenamiento_Validacion(XWhole,YWhole,0.35)
                 #Obtenemos las thetas que predicen un numero concreto
                 thetasMat = oneVsAll(xTrain, yTrain, NUM_LETRAS, LambdaActual)
                 porcAciertosActual = calcularAciertos(xVal, yVal, NUM_LETRAS, thetasMat)
@@ -305,7 +305,7 @@ def redes_neuronales(X,Y,XTest,YTest):
             #Para cada lambda entreno y valido con 3 conjuntos de entrenamiento y
             #validacion distintos
             for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-                xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
+                xTrain , yTrain, xVal, yVal = separarEntrenamiento_Validacion(X,Y,0.35)
                 y_onehot = np.zeros((np.shape(xTrain)[0], NUM_LETRAS))
                 for i in range(np.shape(xTrain)[0]):
                     y_onehot[i][yTrain[i]] = 1
@@ -482,7 +482,7 @@ def SupportVectorMachinesMasIteraciones(X, Y, xTest,yTest ):
                 #Vamos a hacer 3 pruebas con cada configuracion para sets 
                 #de entrenamiento y validacion distintos
                 for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-                    xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
+                    xTrain , yTrain, xVal, yVal = separarEntrenamiento_Validacion(X,Y,0.35)
 
                     #Entreno la SVM con los casos de entrenamiento y saco la puntuacion que obtiene sobre los casos
                     #de validacion
