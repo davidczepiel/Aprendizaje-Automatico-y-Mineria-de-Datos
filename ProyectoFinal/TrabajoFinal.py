@@ -1,3 +1,4 @@
+import string
 from sys import path_importer_cache
 import numpy as np
 from numpy import random
@@ -10,9 +11,10 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 MAX_LETRAS = 28
-NUM_LETRAS = 2
+NUM_LETRAS = 3
 FACTOR_DE_REBAJADO = 0.1
 NUM_ITERATIONS_CROSS_VALIDATION = 3
+TEST_CONFIGURATIONS = False
 
 def main():
     #Sacamos los datos de los ficheros
@@ -36,9 +38,10 @@ def main():
     X = np.clip(X,0,1)
     XTest = np.clip(XTest,0,1)
 
-    regresion_Logistica(X,Y,XTest,YTest)
+
+    #regresion_Logistica(X,Y,XTest,YTest)
     #redes_neuronales(X,Y,XTest,YTest)
-    #SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
+    SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
 
 
 
@@ -110,66 +113,76 @@ def regresion_Logistica(XWhole, YWhole, XTest, YTest ):
     XTest = np.hstack([np.ones([m, 1] ) , XTest ])
     m = np.shape(XWhole)[0]
     XWhole = np.hstack([np.ones([m, 1] ) , XWhole ])
+    mejorLambda = 10.0
 
-    #Estos son los valores de lambda con los que vamos a probar
-    valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10,30])
-    mejorLambda = 0.01
-    mejorPorcAciertos = 0
+    if TEST_CONFIGURATIONS:
+        #Estos son los valores de lambda con los que vamos a probar
+        valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10,30])
+        mejorLambda = 0.01
+        mejorPorcAciertos = 0
 
-    #En este array se almacenan los porcentajes obtenidos por cada una de las configuraciones
-    porcentajesSacados = np.array([])
-    porcentajeScores = np.array([0.0,0.0,0.0])
+        #En este array se almacenan los porcentajes obtenidos por cada una de las configuraciones
+        porcentajesSacados = np.array([])
+        porcentajeScores = np.array([0.0,0.0,0.0])
 
-    #Por cada configuracion, entrenamos y validamos con los casos de validacion, si el resultado es mas favorable que el
-    #mejor que hemos obtenido nos lo guardamos
-    for LambdaActual in valoresLambda:
+        #Por cada configuracion, entrenamos y validamos con los casos de validacion, si el resultado es mas favorable que el
+        #mejor que hemos obtenido nos lo guardamos
+        for LambdaActual in valoresLambda:
 
-        #Vamos a hacer el proceso de validacion 3 veces y cada una con datos distintos para sacar una media
-        for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-            xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(XWhole,YWhole,0.35)
-            #Obtenemos las thetas que predicen un numero concreto
-            thetasMat = oneVsAll(xTrain, yTrain, NUM_LETRAS, LambdaActual)
-            porcAciertosActual = calcularAciertos(xVal, yVal, NUM_LETRAS, thetasMat)
-            porcentajeScores[veces] = porcAciertosActual
-        
-        #Con estas thetas vemos cuandos valores que predecimos son iguales al valor real
-        porcentajesSacados = np.append(porcentajesSacados, np.sum(porcentajeScores)/3)
-        
-        #Si es mas favorable que la mejor configuracion que me he guardado me la guardo
-        if np.sum(porcentajeScores)/3 > mejorPorcAciertos:
-            mejorLambda = LambdaActual
-            mejorPorcAciertos = np.sum(porcentajeScores)/3
+            #Vamos a hacer el proceso de validacion 3 veces y cada una con datos distintos para sacar una media
+            for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
+                xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(XWhole,YWhole,0.35)
+                #Obtenemos las thetas que predicen un numero concreto
+                thetasMat = oneVsAll(xTrain, yTrain, NUM_LETRAS, LambdaActual)
+                porcAciertosActual = calcularAciertos(xVal, yVal, NUM_LETRAS, thetasMat)
+                porcentajeScores[veces] = porcAciertosActual
+            
+            #Con estas thetas vemos cuandos valores que predecimos son iguales al valor real
+            porcentajesSacados = np.append(porcentajesSacados, np.sum(porcentajeScores)/3)
+            
+            #Si es mas favorable que la mejor configuracion que me he guardado me la guardo
+            if np.sum(porcentajeScores)/3 > mejorPorcAciertos:
+                mejorLambda = LambdaActual
+                mejorPorcAciertos = np.sum(porcentajeScores)/3
 
-    #Una vez que hemos sacado la mejor configuracion volvemos a entrenar con esta
-    #Obtenemos otra vez un set de entrenamiento aleatorio
-    xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(XWhole,YWhole,0.35)
-
+        #Generamos la grafica que representa los datos obtenidos
+        print("Los '%' sacados con los casos de validacion son: ", porcentajesSacados)
+        GenerarGraficaLambdasPorcentajes(valoresLambda, porcentajesSacados)
 
     #Y probamos a predecir los casos de testeo
-    thetasMat = oneVsAll(xTrain, yTrain, NUM_LETRAS, mejorLambda)
+    thetasMat = oneVsAll(XWhole, YWhole, NUM_LETRAS, mejorLambda)
     aciertosFinal = calcularAciertos(XTest,YTest, NUM_LETRAS, thetasMat)
     print("//////////////////Regresion logistica///////////////////////////")
-    print("Los '%' sacados con los casos de validacion son: ", porcentajesSacados)
     print("REGRESION LOGISTICA Mejor LAMBDA:",mejorLambda,"Porcentaje de aciertos sobre casos de testeo:",aciertosFinal,"%")
     print("//////////////////Regresion logistica///////////////////////////")
 
-    #Generamos la grafica que representa los datos obtenidos
-    GenerarGraficaLambdasPorcentajes(valoresLambda, porcentajesSacados)
 
 def GenerarGraficaLambdasPorcentajes(thetasUtilizadas,porcSacados):
     #Sacamos los strings que representan las thetas y van a mostrarse en el eje de las X
     strings = ["%.2f" % number for number in thetasUtilizadas]
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    #Ponemos los textos en el eje de las X
-    plt.xticks(np.arange(len(thetasUtilizadas)), strings)
-    #Mostramos los datos
-    plt.scatter(np.arange(len(thetasUtilizadas)), porcSacados, color='red', marker='o')
+    porcSacados = np.round_(porcSacados, decimals = 2)
+    # plt.show()
+    fig, ax = plt.subplots()
+    bar_x = np.arange(1, len(strings)+1)
+    bar_height = porcSacados
+    bar_tick_label = strings
+    bar_label = porcSacados
 
-    #Se pone encima de cada uno de los puntos el valor que representa debido a que vamos a estar trabajando con valores
-    #que pueden variar poco, asi se ve claramente su valor
-    for i, v in enumerate(porcSacados):
-        ax.annotate(str(round(v, 2)), xy=(i,v), xytext=(-7,7), textcoords='offset points')
+    bar_plot = plt.bar(bar_x,bar_height,tick_label=bar_tick_label)
+
+    def autolabel(rects):
+        for idx,rect in enumerate(bar_plot):
+            height = rect.get_height()
+            ax.text(rect.get_x() + rect.get_width()/2., 0.95*height,
+                    bar_label[idx],
+                    ha='center', va='bottom', rotation=0)
+
+    autolabel(bar_plot)
+    plt.ylim(0,100)
+    plt.title('Porcentaje de aciertos para cada lambda ')
+    plt.xlabel("Thetas Utilizadas")
+    plt.ylabel("Porcentaje de aciertos")
+    plt.savefig("add_text_bar_matplotlib_01.png", bbox_inches='tight')
     plt.show()
 
 def oneVsAll(X, y, num_etiquetas, reg):
@@ -259,7 +272,6 @@ def redes_neuronales(X,Y,XTest,YTest):
     
     m = np.shape(X)[0]
     n = np.shape(X)[1]
-    
     #Les restamos 1 a los IDs de las letras porque estas se encuentran en el rango [1,28]
     #Y a nosotros nos interesa trabajar en el rango [0,27]
     Y = (Y - 1)
@@ -277,51 +289,54 @@ def redes_neuronales(X,Y,XTest,YTest):
     auxtheta1 = np.random.rand(num_hidden, n+1) * (2*EIni) - EIni
     auxtheta2 = np.random.rand(num_labels, num_hidden + 1) * (2*EIni) - EIni
     params = np.concatenate((np.ravel(auxtheta1), np.ravel(auxtheta2)))
+    mejorLambda = 0.3
     
-    #Estos son los valores de lambda con los que vamos a probar
-    valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30])
-    mejorLambda = 0.01
-    mejorPorcAcierto = 0
-    porcentajeScores = np.array([0.0,0.0,0.0])
-    porcentajesScoresArray = np.array([])
+    if TEST_CONFIGURATIONS:
+        #Estos son los valores de lambda con los que vamos a probar
+        valoresLambda = np.array([ 0, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30])
+        mejorLambda = 0.01
+        mejorPorcAcierto = 0
+        porcentajeScores = np.array([0.0,0.0,0.0])
+        porcentajesScoresArray = np.array([])
 
-    #Mediante validacion cruzada vamos a analizar todas las lambdas para obtener la mejor
-    for lambdaActual in valoresLambda:
+        #Mediante validacion cruzada vamos a analizar todas las lambdas para obtener la mejor
+        for lambdaActual in valoresLambda:
 
-        #Para cada lambda entreno y valido con 3 conjuntos de entrenamiento y
-        #validacion distintos
-        for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-            xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
-            y_onehot = np.zeros((np.shape(xTrain)[0], NUM_LETRAS))
-            for i in range(np.shape(xTrain)[0]):
-                y_onehot[i][yTrain[i]] = 1
+            #Para cada lambda entreno y valido con 3 conjuntos de entrenamiento y
+            #validacion distintos
+            for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
+                xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
+                y_onehot = np.zeros((np.shape(xTrain)[0], NUM_LETRAS))
+                for i in range(np.shape(xTrain)[0]):
+                    y_onehot[i][yTrain[i]] = 1
 
-            #Obtenemos en un vector los casos que hemos predecido correctamente
-            correctos = prediccionConRedNeuronal(xVal, yVal,params,num_entries, num_hidden, num_labels, xTrain, y_onehot, lambdaActual)
+                #Obtenemos en un vector los casos que hemos predecido correctamente
+                correctos = prediccionConRedNeuronal(xVal, yVal,params,num_entries, num_hidden, num_labels, xTrain, y_onehot, lambdaActual)
 
-            #Me guardo el porcentaje de aciertos
-            porcentajeScores[veces] = (np.sum(correctos) / len(correctos)) * 100
+                #Me guardo el porcentaje de aciertos
+                porcentajeScores[veces] = (np.sum(correctos) / len(correctos)) * 100
+            
+            porcentajeLamdaActual = np.sum(porcentajeScores)/3
+            porcentajesScoresArray = np.append(porcentajesScoresArray, porcentajeLamdaActual)
+            print( "Con lambda: ", lambdaActual, " Aciertos: " , porcentajeLamdaActual , "%")
+
+            #Si hemos encontrado una configuracion mejor que la actual nos la guardamos
+            if(porcentajeLamdaActual > mejorPorcAcierto):
+                mejorPorcAcierto = porcentajeLamdaActual
+                mejorLambda = lambdaActual
         
-        porcentajeLamdaActual = np.sum(porcentajeScores)/3
-        porcentajesScoresArray = np.append(porcentajesScoresArray, porcentajeLamdaActual)
-        print( "Con lambda: ", lambdaActual, " Aciertos: " , porcentajeLamdaActual , "%")
-
-        #Si hemos encontrado una configuracion mejor que la actual nos la guardamos
-        if(porcentajeLamdaActual > mejorPorcAcierto):
-            mejorPorcAcierto = porcentajeLamdaActual
-            mejorLambda = lambdaActual
-        
+        #generamos la grafica
+        GenerarGraficaLambdasPorcentajes(valoresLambda, porcentajesScoresArray)
+            
 
     #Volvemos a sacar los casos predichos correctamente pero en este caso del set de Testeo
     y_onehot = np.zeros((np.shape(X)[0], NUM_LETRAS))
     for i in range(np.shape(X)[0]):
         y_onehot[i][Y[i]] = 1
-    correctos = prediccionConRedNeuronal(XTest, YTest,params,num_entries, num_hidden, num_labels,X, y_onehot, lambdaActual)
+    correctos = prediccionConRedNeuronal(XTest, YTest,params,num_entries, num_hidden, num_labels,X, y_onehot, mejorLambda)
     porcAciertosTest = (np.sum(correctos) / len(correctos)) * 100
     print( "Con la mejor lambda: ", mejorLambda, " Aciertos totales: " , porcAciertosTest , "%")
 
-    #generamos la grafica
-    GenerarGraficaLambdasPorcentajes(valoresLambda, porcentajesScoresArray)
 
 
 
@@ -441,54 +456,55 @@ def costeRedNeuronal(h, X, Y):
 
 def SupportVectorMachinesMasIteraciones(X, Y, xTest,yTest ):
 
-    m = np.shape(X)[0]
-    #Estas son todas las configuraciones que vamos a probar para las SVM 
-    C_vec = [0.01, 0.03, 0.05, 0.1, 0.3, 1, 3, 5, 10, 20, 30, 40, 50, 60]
-    sigma_vec = [1, 3, 5, 10, 20, 30, 40, 50, 60, 65, 70, 75, 80 , 85, 90, 140]
+    bestConfiguration = np.array([50.,5.])
 
-    #En scores vamos a almacenar las puntuaciones que nos den cada configuracion
-    scores = np.zeros((len(C_vec), len(sigma_vec)))
+    if TEST_CONFIGURATIONS:
+        #Estas son todas las configuraciones que vamos a probar para las SVM 
+        C_vec = [0.01, 0.03, 0.05, 0.1, 0.3, 1, 3, 5, 10, 20, 30, 40, 50, 60]
+        sigma_vec = [1, 3, 5, 10, 20, 30, 40, 50, 60, 65, 70, 75, 80 , 85, 90, 140]
 
-    xT, yT,xV,yV = separarEntrenaiento_Validacion(X,Y,0.2)
+        #En scores vamos a almacenar las puntuaciones que nos den cada configuracion
+        scores = np.zeros((len(C_vec), len(sigma_vec)))
 
-    #Nos guardatemos la mejor puntuacion obtenida y la configuracion con la que la sacamos
-    bestConfiguration = np.array([0.,0.])
-    maxScore = -1
+        #Nos guardatemos la mejor puntuacion obtenida y la configuracion con la que la sacamos
+        bestConfiguration = np.array([0.,0.])
+        maxScore = -1
 
-    #Por cada configuracion vamos a hacer 3 pruebas y 
-    #para evaluar la efucacia de cada una vamos a hacerlo con la media
-    porcentajeScores = np.array([0.0,0.0,0.0])
+        #Por cada configuracion vamos a hacer 3 pruebas y 
+        #para evaluar la efucacia de cada una vamos a hacerlo con la media
+        porcentajeScores = np.array([0.0,0.0,0.0])
 
-    #saco los aciertos para cada uno de los casos de prueba
-    for i in range(len(C_vec)): 
-        for j in range(len(sigma_vec)): 
-            print("\nComprobando la config [", C_vec[i],",",sigma_vec[j],"]")
+        #saco los aciertos para cada uno de los casos de prueba
+        for i in range(len(C_vec)): 
+            for j in range(len(sigma_vec)): 
+                print("\nComprobando la config [", C_vec[i],",",sigma_vec[j],"]")
 
-            #Vamos a hacer 3 pruebas con cada configuracion para sets 
-            #de entrenamiento y validacion distintos
-            for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
-                xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
+                #Vamos a hacer 3 pruebas con cada configuracion para sets 
+                #de entrenamiento y validacion distintos
+                for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
+                    xTrain , yTrain, xVal, yVal = separarEntrenaiento_Validacion(X,Y,0.35)
 
-                #Entreno la SVM con los casos de entrenamiento y saco la puntuacion que obtiene sobre los casos
-                #de validacion
-                svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2)) 
-                svm.fit(xTrain, yTrain )
-                porcentajeScores[veces] = svm.score(xVal,yVal)
-            
-            print(porcentajeScores)
-            newScore = np.sum(porcentajeScores)/3.0
-            scores[i][j] = newScore
+                    #Entreno la SVM con los casos de entrenamiento y saco la puntuacion que obtiene sobre los casos
+                    #de validacion
+                    svm = SVC(kernel='rbf' , C= C_vec[i], gamma=1 / ( 2 * sigma_vec[j] **2)) 
+                    svm.fit(xTrain, yTrain )
+                    porcentajeScores[veces] = svm.score(xVal,yVal)
+                
+                print(porcentajeScores)
+                newScore = np.sum(porcentajeScores)/3.0
+                scores[i][j] = newScore
 
-            #Si he conseguido un mejor porcentaje me quedo con esta configuracion
-            if newScore > maxScore:
-                maxScore = newScore
-                bestConfiguration[0]= C_vec[i]
-                bestConfiguration[1]= sigma_vec[j]
-                print("Nueva max Score: ", maxScore, "con la configuracion ",bestConfiguration)
+                #Si he conseguido un mejor porcentaje me quedo con esta configuracion
+                if newScore > maxScore:
+                    maxScore = newScore
+                    bestConfiguration[0]= C_vec[i]
+                    bestConfiguration[1]= sigma_vec[j]
+                    print("Nueva max Score: ", maxScore, "con la configuracion ",bestConfiguration)
 
     #Entreno para la mejor de las configuraciones y saco el score de predecir los casos de test
     svm = SVC(kernel='rbf' , C=  bestConfiguration[0], gamma=1 / ( 2 * bestConfiguration[1] **2) )    
-    svm.fit(xTrain, yTrain)
+    print("Mejor configuracion de la SVM: ", bestConfiguration)
+    svm.fit(X, Y)
     newScore = svm.score(xTest,yTest)
 
     print("//////////////////SVM///////////////////////////")
