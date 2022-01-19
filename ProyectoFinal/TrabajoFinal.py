@@ -1,7 +1,6 @@
 import string
 from sys import path_importer_cache
 import numpy as np
-from numpy import random
 from pandas.io.parsers import read_csv
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -11,10 +10,12 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 MAX_LETRAS = 28
-NUM_LETRAS = 10
-FACTOR_DE_REBAJADO = 0.1
 NUM_ITERATIONS_CROSS_VALIDATION = 3
-TEST_CONFIGURATIONS = True
+#Esta a false porque los valores de lambda, c y gamma están puestos a saco a los valores óptimos
+# que ya hemos probado para tres letras, si se cambia el número de letras probar con distintas configuraciones,
+# es decir, TEST_CONFIGURATIONS = True
+NUM_LETRAS = 3
+TEST_CONFIGURATIONS = False 
 
 def main():
     #Sacamos los datos de los ficheros
@@ -44,47 +45,24 @@ def main():
     #SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
 
 
-
-def rebajar_Datos(X,Y, porcentaje):
-    auxX = np.array([])
-    auxX = np.array([])
-    resultX = np.empty((0,1024))
-    resultY = np.array([])
-    auxX = np.empty_like(X)
-    
-
-    for i in range(1,NUM_LETRAS+1):
-        #Me quedo con los elementos que representan la letra que estoy analizando ahora
-        indicesLetra = np.where(Y == i)
-        auxX = X[indicesLetra]
-        auxY = Y[indicesLetra]
-        #Saco solo un porcentaje determinado de casos de la letra que estoy analizando
-        numElemsToGet = np.shape(auxX)[0]*porcentaje
-        numElemsToGet = (int)(numElemsToGet)
-        #Añado los casos sacados al array que voy a devolver
-        resultY = np.append(resultY, auxY[:(int)(numElemsToGet) ])
-        resultX = np.append(resultX, auxX[ : (int)(numElemsToGet),:], axis=0)
-
-    #Para obtener la diferencia entre 2 arrays hacemos diferencia = np.setdiff1d(array1, array2)
-    return resultX, resultY 
-
-
 def separarEntrenamiento_Validacion(X,Y, porcentaje):
 
-    #Set de entrenamiento
+    #Set de entrenamiento a devolver
     resultTrainX = np.empty((0,np.shape(X)[1]), dtype=int)
     resultTrainY = np.array([], dtype= int)
 
-    #Set de validacion
+    #Set de validacion a devolver
     resultValX = np.empty((0,np.shape(X)[1]), dtype=int)
     resultValY = np.array([], dtype=int)    
 
+    #Para cada letra a clasificar
     for i in range(1,NUM_LETRAS+1):
         #Me quedo con los elementos que representan la letra que estoy analizando ahora
         indicesLetra = np.where(Y == i)
         auxX = X[indicesLetra]
         auxY = Y[indicesLetra]
 
+        #Se coge un porcentaje contiguo de los indices y se usan como datos de validacion
         m = np.shape(auxX)[0]
         firstIndex = (int)(np.random.rand(1) * (m*(1-porcentaje)))
         lastIndex = (int)(firstIndex + (m*porcentaje))
@@ -92,7 +70,8 @@ def separarEntrenamiento_Validacion(X,Y, porcentaje):
         randomIndexes = range(firstIndex, lastIndex)
         resultValX =np.append(resultValX, auxX[randomIndexes], axis=0)
         resultValY =np.append(resultValY, auxY[randomIndexes])
-
+        
+        #El resto se usan para el entrenamiento
         resultTrainX = np.append(resultTrainX, np.delete(auxX, randomIndexes, axis=0), axis=0)
         resultTrainY = np.append(resultTrainY, np.delete(auxY, randomIndexes))
 
