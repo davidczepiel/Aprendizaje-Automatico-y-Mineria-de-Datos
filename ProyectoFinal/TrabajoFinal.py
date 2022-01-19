@@ -11,10 +11,10 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 MAX_LETRAS = 28
-NUM_LETRAS = 3
+NUM_LETRAS = 10
 FACTOR_DE_REBAJADO = 0.1
 NUM_ITERATIONS_CROSS_VALIDATION = 3
-TEST_CONFIGURATIONS = False
+TEST_CONFIGURATIONS = True
 
 def main():
     #Sacamos los datos de los ficheros
@@ -40,8 +40,8 @@ def main():
 
 
     #regresion_Logistica(X,Y,XTest,YTest)
-    #redes_neuronales(X,Y,XTest,YTest)
-    SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
+    redes_neuronales(X,Y,XTest,YTest)
+    #SupportVectorMachinesMasIteraciones(X,Y,XTest,YTest)
 
 
 
@@ -180,7 +180,7 @@ def GenerarGraficaLambdasPorcentajes(thetasUtilizadas,porcSacados):
     autolabel(bar_plot)
     plt.ylim(0,100)
     plt.title('Porcentaje de aciertos para cada lambda ')
-    plt.xlabel("Thetas Utilizadas")
+    plt.xlabel("Lambdas Utilizadas")
     plt.ylabel("Porcentaje de aciertos")
     plt.savefig("add_text_bar_matplotlib_01.png", bbox_inches='tight')
     plt.show()
@@ -301,7 +301,6 @@ def redes_neuronales(X,Y,XTest,YTest):
 
         #Mediante validacion cruzada vamos a analizar todas las lambdas para obtener la mejor
         for lambdaActual in valoresLambda:
-
             #Para cada lambda entreno y valido con 3 conjuntos de entrenamiento y
             #validacion distintos
             for veces in range(NUM_ITERATIONS_CROSS_VALIDATION):
